@@ -42,7 +42,7 @@ install_hysteria(){
 clear
 echo 'Installing hysteria.'
 {
-wget -N --no-check-certificate -q -O ~/install_server.sh https://raw.githubusercontent.com/apernet/hysteria/master/install_server.sh; chmod +x ~/install_server.sh; ./install_server.sh
+wget -N --no-check-certificate -q -O ~/install_server.sh https://raw.githubusercontent.com/apernet/hysteria/master/scripts/install_server.sh; chmod +x ~/install_server.sh; ./install_server.sh
 } 
 }
 
@@ -59,10 +59,10 @@ echo '{
   "up_mbps": 100,
   "down_mbps": 100,
   "disable_udp": false,
-  "obfs": "dhoom",
+  "obfs": "udptunnel",
   "auth": {
     "mode": "passwords",
-    "config": ["dhoom", "stronghold3"]
+    "config": ["udptunnel", "udptunnel"]
   }
 }
 ' >> /etc/hysteria/config.json
